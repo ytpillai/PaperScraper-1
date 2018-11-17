@@ -15,10 +15,12 @@ class DOIAggregator:
         ...
         """
 
-        r = requests.get('https://doi.org/%s' % doi_number, allow_redirects=False)
+        r = requests.get('https://doi.org/%s' % doi_number)
+        
         if r.status_code == 404:
             raise ValueError("Could not find a document with that DOI")
         else:
             return {
-                'l0': r.headers['Location']
+                'l0': r.url
             }
+

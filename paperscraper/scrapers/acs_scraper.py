@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 
 from paperscraper.scrapers.base.base_scraper import BaseScraper
 
@@ -26,7 +27,7 @@ class ACS(BaseScraper):
 
     def get_body(self, soup):
 
-        body = []
+        body = OrderedDict()
 
         def is_reference(tag):
             prev_neg = False
@@ -44,19 +45,29 @@ class ACS(BaseScraper):
         article_sections = soup.find_all("div", class_='NLM_sec')
 
         for section in article_sections:
+            if "." in section.get('id').replace("sec", ""): # Checking if it is a subsection, only getting the number of the section
+                subSectionsList = section.get('id').replace("sec", "").split(".")
+                curSec = subSectionsList[0]
+                paragraphDict = body[curSec] # Main section
+                for i in subSectionsList[1:1]:
+                    curSec += "." + subSectionsList[i]
+                    paragraphDict = body[curSec]
 
-            sectionTitle = section.find('h2')
 
-            if sectionTitle:
-                sectionTitle = section.find('h2').get_text()
+
             else:
-                sectionTitle = "NO SECTION HEADER PROVIDED"
+                sectionTitle = section.find('h2')
 
-            paragraphs = section.find_all("div", class_="NLM_p")
+                if sectionTitle:
+                    sectionTitle = section.find('h2').get_text()
+                else:
+                    sectionTitle = "NO SECTION HEADER PROVIDED"
+                body[sectionTitle] = OrderedDict()
+                paragraphs = section.find_all("div", class_="NLM_p")
 
-            for i, paragraph in enumerate(paragraphs):
-                paragraph_text = paragraph.get_text()
-                body.append({"text": paragraph_text, "meta": {"section": sectionTitle, "paragraph": i + 1}})
+                for i, paragraph in enumerate(paragraphs):
+                    paragraph_text = paragraph.get_text()
+                    body[sectionTitle][str.format("p%i", i+1)] = paragraph_text
 
         return body
 
